@@ -1,17 +1,12 @@
 import os
 import logging
-import asyncio
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from bot import setup_bot, process_update
 
-# Логгирование
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
 
-# Flask-приложение
 app = Flask(__name__)
-
-# Инициализация Telegram бота
 setup_bot()
 
 @app.route('/')
@@ -22,14 +17,11 @@ def home():
 def webhook():
     try:
         update_data = request.get_json(force=True)
-        
-        # Асинхронно обрабатываем update
-        asyncio.get_event_loop().create_task(process_update(update_data))
-
-        return "OK", 200
+        process_update(update_data)  # Убрали asyncio
+        return jsonify({"status": "ok"}), 200
     except Exception as e:
-        logger.exception("Webhook processing error")
-        return f"Error: {e}", 500
+        logger.exception("Webhook error")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
