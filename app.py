@@ -1,16 +1,13 @@
 import os
 import logging
+import asyncio
 from flask import Flask, request
-from bot import setup_bot
+from bot import setup_bot, process_update
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
 
-# Flask-приложение
 app = Flask(__name__)
-
-# Telegram Bot application (создаём один раз)
 telegram_app = setup_bot()
 
 @app.route('/')
@@ -19,13 +16,13 @@ def home():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    """Обработка входящих Telegram webhook-запросов"""
     try:
         update_data = request.get_json(force=True)
-        telegram_app.update_queue.put_nowait(update_data)
+        logger.info(f"Получено обновление: {update_data}")
+        asyncio.run(process_update(update_data))
         return "OK", 200
     except Exception as e:
-        logger.exception("Webhook processing error")
+        logger.exception("Ошибка при обработке webhook")
         return f"Error: {e}", 500
 
 if __name__ == "__main__":
