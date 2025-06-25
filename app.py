@@ -1,31 +1,33 @@
 import os
 import logging
-from flask import Flask, request, jsonify
-from werkzeug.middleware.proxy_fix import ProxyFix
+from flask import Flask, request
 from bot import setup_bot
 
+# Настройка логирования
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app")
 
+# Flask-приложение
 app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app)
 
-bot_application = setup_bot()
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+# Telegram Bot application (создаём один раз)
+telegram_app = setup_bot()
 
-if not WEBHOOK_URL:
-    logger.warning("⚠️ WEBHOOK_URL is not set — webhook won't be configured.")
-else:
-    logger.info(f"✅ WEBHOOK_URL is set: {WEBHOOK_URL}")
+@app.route('/')
+def home():
+    return "🤖 Telegram Translator Bot is running!"
 
-@app.route("/webhook", methods=["POST"])
+@app.route('/webhook', methods=['POST'])
 def webhook():
-    if bot_application:
-        update = request.get_json(force=True)
-        bot_application.update_queue.put_nowait(update)
-        return jsonify({"status": "ok"}), 200
-    return jsonify({"error": "Bot not initialized"}), 500
+    """Обработка входящих Telegram webhook-запросов"""
+    try:
+        update_data = request.get_json(force=True)
+        telegram_app.update_queue.put_nowait(update_data)
+        return "OK", 200
+    except Exception as e:
+        logger.exception("Webhook processing error")
+        return f"Error: {e}", 500
 
-@app.route("/")
-def index():
-    return "🚀 Telegram bot is running."
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
