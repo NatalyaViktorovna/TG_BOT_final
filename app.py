@@ -1,17 +1,18 @@
 import os
 import logging
+import asyncio
 from flask import Flask, request
 from bot import setup_bot
 from telegram import Update
 
-# Настройка логгирования
+# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
 
-# Инициализация Flask
+# Flask-приложение
 app = Flask(__name__)
 
-# Создание экземпляра Telegram-приложения
+# Telegram-приложение (Application)
 telegram_app = setup_bot()
 
 @app.route('/')
@@ -23,7 +24,10 @@ def webhook():
     try:
         update_data = request.get_json(force=True)
         update = Update.de_json(update_data, telegram_app.bot)
-        telegram_app.process_update(update)
+
+        # Передаём обновление в очередь
+        asyncio.get_event_loop().create_task(telegram_app.update_queue.put(update))
+
         return "OK", 200
     except Exception as e:
         logger.exception("Webhook processing error")
