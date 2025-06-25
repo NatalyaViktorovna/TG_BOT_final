@@ -2,18 +2,17 @@ import os
 import logging
 import asyncio
 from flask import Flask, request
-from bot import setup_bot
-from telegram import Update
+from bot import setup_bot, process_update
 
-# Настройка логирования
+# Логгирование
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
 
 # Flask-приложение
 app = Flask(__name__)
 
-# Telegram-приложение (Application)
-telegram_app = setup_bot()
+# Инициализация Telegram бота
+setup_bot()
 
 @app.route('/')
 def home():
@@ -23,10 +22,9 @@ def home():
 def webhook():
     try:
         update_data = request.get_json(force=True)
-        update = Update.de_json(update_data, telegram_app.bot)
-
-        # Передаём обновление в очередь
-        asyncio.get_event_loop().create_task(telegram_app.update_queue.put(update))
+        
+        # Асинхронно обрабатываем update
+        asyncio.get_event_loop().create_task(process_update(update_data))
 
         return "OK", 200
     except Exception as e:
