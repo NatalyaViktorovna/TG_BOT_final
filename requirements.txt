@@ -1,6 +1,5 @@
 flask
 python-telegram-bot==20.3
 openai
-psycopg2-binary
 nest_asyncio
 gunicorn
