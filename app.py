@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
 
 app = Flask(__name__)
-telegram_app = setup_bot()
+setup_bot()  # инициализируем приложение Telegram
 
 @app.route('/')
 def home():
@@ -18,11 +18,11 @@ def home():
 def webhook():
     try:
         update_data = request.get_json(force=True)
-        logger.info(f"Получено обновление: {update_data}")
+        logger.info(f"🔔 Входящее обновление: {update_data}")
         asyncio.run(process_update(update_data))
         return "OK", 200
     except Exception as e:
-        logger.exception("Ошибка при обработке webhook")
+        logger.exception("❌ Ошибка при обработке webhook")
         return f"Error: {e}", 500
 
 if __name__ == "__main__":
